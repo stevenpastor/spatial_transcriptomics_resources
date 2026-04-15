@@ -241,17 +241,28 @@ def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
     adata.var["mt"] = mt_mask.values
     adata.var["ribo"] = ribo_mask.values
 
+    n_mt = int(mt_mask.sum())
+    n_ribo = int(ribo_mask.sum())
+
     if verbose:
         src = f".var['{symbol_source}']" if symbol_source else ".var_names"
-        print(f"  QC gene matching against {src}: "
-              f"{int(mt_mask.sum())} mt, {int(ribo_mask.sum())} ribo")
-        if int(ribo_mask.sum()) == 0:
-            sample = list(symbols.iloc[:5])
-            print(f"  [warn] zero ribosomal genes matched — sample symbols: {sample}")
+        print(f"  QC gene matching against {src}: {n_mt} mt, {n_ribo} ribo")
+        if n_ribo == 0:
+            print("  [info] No RPL*/RPS* genes found. This is expected for "
+                  "10x Visium HD (CytAssist FFPE) — the human probe panel "
+                  "intentionally excludes ribosomal protein genes to prevent "
+                  "probe saturation. pct_counts_ribo will be all zeros and "
+                  "is not a meaningful QC axis for this dataset.")
 
+    qc_vars = ["mt", "ribo"] if n_ribo > 0 else ["mt"]
     sc.pp.calculate_qc_metrics(
-        adata, qc_vars=["mt", "ribo"], percent_top=None, log1p=True, inplace=True
+        adata, qc_vars=qc_vars, percent_top=None, log1p=True, inplace=True
     )
+    # Keep the column present (as zeros) so downstream code referencing it
+    # doesn't KeyError — but it will be uninformative.
+    if n_ribo == 0 and "pct_counts_ribo" not in adata.obs.columns:
+        adata.obs["pct_counts_ribo"] = 0.0
+    adata.uns["qc_has_ribo"] = bool(n_ribo > 0)
 
     # Complexity: log(genes) / log(counts) — measures transcriptomic diversity
     adata.obs["complexity"] = (
