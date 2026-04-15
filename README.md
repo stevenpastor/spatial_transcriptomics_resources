@@ -1,8 +1,8 @@
 # Visium HD Spatial Transcriptomics Tutorial
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_crc_p1_tutorial.ipynb)
+[Open In Colab](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_crc_p1_tutorial.ipynb)
 
-Analyze 10x Genomics Visium HD spatial transcriptomics data: QC, filtering, cell type annotation, neighborhood analysis, spatially variable genes, and ligand-receptor communication.
+Analyze a published 10x Genomics Visium HD spatial transcriptomics dataset at one resolution with QC, filtering, cell type annotation, neighborhood analysis, spatially variable genes, and ligand-receptor communication.
 
 ## Quick Start
 
@@ -15,15 +15,15 @@ Human Colorectal Cancer (CRC), Patient 1 from the [Nature Genetics 2025 publicat
 ## What you will learn
 
 1. Load and explore Visium HD spatial transcriptomics data
-2. Quality control with real filtering (per-bin metrics + spatial outlier detection)
-3. Compare marker-based annotations against published ground-truth labels
+2. Quality control with filtering (per-bin metrics + spatial outlier detection)
+3. Compare marker-based annotations against published ground-truth labels, for your convenience
 4. Spatial neighborhood analysis, spatially variable genes, cell-cell communication
 
 ## 🕹️ Bonus: Game Tutorial
 
-[![Open In Colab — Game](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_game_tutorial.ipynb)
+[Open In Colab: Game](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_game_tutorial.ipynb)
 
-A playful companion notebook. Hunt seven retro arcade sprites (Pac-Man, Ghost, Space Invader, ...) hidden inside a synthetic tissue — each one unlocks when you correctly perform a core analysis step (QC, clustering, annotation, neighborhoods, SVGs). Runs on Colab in under a minute, no external data download.
+A playful companion notebook. Hunt seven retro arcade sprites (Pac-Man, Ghost, Space Invader, ...) hidden inside a synthetic tissue; each one unlocks when you correctly perform a core analysis step (QC, clustering, annotation, neighborhoods, SVGs). Runs on Colab in under a minute, no external data download.
 
 ## Repository structure
 
@@ -36,3 +36,4 @@ scripts/
   game_utils.py                     # Synthetic-tissue generator + validators for the game
   generate_precomputed.py           # Script used to create the precomputed data
 ```
+
