@@ -201,16 +201,53 @@ def load_visium_hd_segmented(data_dir: str) -> sc.AnnData:
 # QC Helpers
 # ---------------------------------------------------------------------------
 
-def compute_qc_metrics(adata: sc.AnnData) -> sc.AnnData:
+def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
     """Compute comprehensive QC metrics for Visium HD data.
 
     Adds: total_counts, n_genes_by_counts, pct_counts_mt, pct_counts_ribo,
           log1p_total_counts, log1p_n_genes, complexity.
+
+    Robust to var_names being Ensembl IDs: looks for a gene-symbol column
+    in .var (gene_symbols / feature_name / symbol / gene_name) and matches
+    against that. Prints a diagnostic of how many genes were flagged so you
+    can catch silently-empty matches.
     """
-    # Mitochondrial genes
-    adata.var["mt"] = adata.var_names.str.startswith(("MT-", "mt-"))
-    # Ribosomal protein genes
-    adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL", "Rps", "Rpl"))
+    # Find the most plausible source of gene symbols. read_10x_h5 / read_10x_mtx
+    # usually puts symbols in var_names, but with some Visium HD outputs the
+    # var_names end up as Ensembl IDs and the symbols live in a var column.
+    symbol_cols = ["gene_symbols", "feature_name", "symbol", "gene_name", "Symbol"]
+    symbol_source = None
+    for col in symbol_cols:
+        if col in adata.var.columns:
+            symbol_source = col
+            break
+
+    if symbol_source is not None:
+        symbols = adata.var[symbol_source].astype(str)
+    else:
+        symbols = pd.Series(adata.var_names.astype(str), index=adata.var_names)
+
+    # If var_names look like Ensembl IDs but we somehow didn't find a symbol
+    # column, fall back to var_names anyway (matching will just miss).
+    looks_ensembl = symbols.str.match(r"^ENS[A-Z]*\d{6,}").mean() > 0.5
+    if looks_ensembl and symbol_source is None and verbose:
+        print("  [warn] var_names look like Ensembl IDs and no gene-symbol "
+              "column was found in .var — mt/ribo matching will likely miss.")
+
+    # Case-insensitive matching catches MT-/mt-, RPS/Rps, RPL/Rpl in one pass.
+    mt_mask = symbols.str.match(r"^mt-", case=False, na=False)
+    ribo_mask = symbols.str.match(r"^rp[sl]\d", case=False, na=False)
+
+    adata.var["mt"] = mt_mask.values
+    adata.var["ribo"] = ribo_mask.values
+
+    if verbose:
+        src = f".var['{symbol_source}']" if symbol_source else ".var_names"
+        print(f"  QC gene matching against {src}: "
+              f"{int(mt_mask.sum())} mt, {int(ribo_mask.sum())} ribo")
+        if int(ribo_mask.sum()) == 0:
+            sample = list(symbols.iloc[:5])
+            print(f"  [warn] zero ribosomal genes matched — sample symbols: {sample}")
 
     sc.pp.calculate_qc_metrics(
         adata, qc_vars=["mt", "ribo"], percent_top=None, log1p=True, inplace=True
