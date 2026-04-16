@@ -1,30 +1,22 @@
 # Visium HD Spatial Transcriptomics Tutorial
 
+## Quick Start
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_quickstart.ipynb)
 
 Analyze a 10x Genomics Visium HD spatial transcriptomics dataset with QC, filtering, cell type annotation, neighborhood analysis, spatially variable genes, and ligand-receptor communication.
 
-## Quick Start
-
 Click the **Colab** badge above to run the quickstart notebook. It auto-installs dependencies and downloads pre-processed data (~150 MB) from Figshare. No local setup needed.
 
-## Dataset
+### Dataset
 
-Human Colorectal Cancer (CRC), Patient 1 from the [Nature Genetics 2025 publication](https://www.nature.com/articles/s41588-025-02193-3). Pre-processed to 50K bins at 8 um resolution with ground-truth cell type annotations from the original study group.
+Human Colorectal Cancer (CRC), Patient 1 from the [Nature Genetics 2025 publication](https://www.nature.com/articles/s41588-025-02193-3). Pre-processed to ~50K bins at 8 um resolution with ground-truth cell type annotations from the original study group.
 
-## Notebooks
-
-### Quickstart (~30 min)
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_quickstart.ipynb)
-
-Condensed walkthrough covering the full pipeline: QC, annotation, spatial analysis, and cell-cell communication. Start here.
-
-### Comprehensive Tutorial (~60 min)
+## Comprehensive Tutorial
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_crc_p1_tutorial.ipynb)
 
-Same workflow with detailed explanations of every plot, metric, and biological interpretation.
+Same workflow as the quickstart but with detailed explanations of every plot, metric, and biological interpretation.
 
 ## What you will learn
 
