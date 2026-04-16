@@ -232,7 +232,7 @@ def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
     looks_ensembl = symbols.str.match(r"^ENS[A-Z]*\d{6,}").mean() > 0.5
     if looks_ensembl and symbol_source is None and verbose:
         print("  [warn] var_names look like Ensembl IDs and no gene-symbol "
-              "column was found in .var — mt/ribo matching will likely miss.")
+              "column was found in .var, mt/ribo matching will likely miss.")
 
     # Case-insensitive matching catches MT-/mt-, RPS/Rps, RPL/Rpl in one pass.
     mt_mask = symbols.str.match(r"^mt-", case=False, na=False)
@@ -249,7 +249,7 @@ def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
         print(f"  QC gene matching against {src}: {n_mt} mt, {n_ribo} ribo")
         if n_ribo == 0:
             print("  [info] No RPL*/RPS* genes found. This is expected for "
-                  "10x Visium HD (CytAssist FFPE) — the human probe panel "
+                  "10x Visium HD (CytAssist FFPE). The human probe panel "
                   "intentionally excludes ribosomal protein genes to prevent "
                   "probe saturation. pct_counts_ribo will be all zeros and "
                   "is not a meaningful QC axis for this dataset.")
@@ -259,12 +259,12 @@ def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
         adata, qc_vars=qc_vars, percent_top=None, log1p=True, inplace=True
     )
     # Keep the column present (as zeros) so downstream code referencing it
-    # doesn't KeyError — but it will be uninformative.
+    # doesn't KeyError, but it will be uninformative.
     if n_ribo == 0 and "pct_counts_ribo" not in adata.obs.columns:
         adata.obs["pct_counts_ribo"] = 0.0
     adata.uns["qc_has_ribo"] = bool(n_ribo > 0)
 
-    # Complexity: log(genes) / log(counts) — measures transcriptomic diversity
+    # Complexity: log(genes) / log(counts), measures transcriptomic diversity
     adata.obs["complexity"] = (
         np.log1p(adata.obs["n_genes_by_counts"])
         / np.log1p(adata.obs["total_counts"])
