@@ -1,0 +1,6 @@
+notebook/visium_hd_game_tutorial.ipynb
+scripts/game_utils.py
+notebook/.ipynb_checkpoints/
+scripts/__pycache__/
+*.pyc
+.DS_Store
