@@ -117,6 +117,22 @@ We use the 8 um resolution because it balances signal density (~1 to 3 cells per
 
 ## Slide 4: Analysis Pipeline
 
+### Before analysis: upstream processing
+
+By the time we open a notebook, several steps have already happened:
+
+1. **Tissue preparation and imaging**: the tissue was sectioned onto a glass slide, stained with H&E, and imaged at high resolution. This H&E image is both the morphology reference and the coordinate system for all spatial plots.
+
+2. **CytAssist and sequencing**: the tissue section was run through CytAssist to transfer probes onto the Visium HD capture slide, libraries were built, and the sample was sequenced on an Illumina instrument. The output is FASTQ files.
+
+3. **Image registration**: the H&E microscope image and the CytAssist image need to be aligned so barcodes map to the correct tissue positions. Space Ranger can auto-detect this alignment in most cases. For difficult samples (rotated sections, low contrast, or poor fiducial detection), Loupe Browser provides a manual alignment workflow where you identify fiducials and pin landmarks between the two images. If manual alignment was used, the exported JSON file is passed to Space Ranger via `--loupe-alignment`.
+
+4. **Space Ranger**: takes the FASTQs, H&E image, CytAssist image (and alignment file if applicable), reference transcriptome, and probe set as inputs. It demultiplexes reads, maps them to the genome, registers images, and outputs binned count matrices at multiple resolutions (2, 8, 16 um) along with spatial coordinate files and a QC report. This is the last "black box" step before interactive analysis begins.
+
+Everything from this point forward is what we do in the tutorial, starting from the Space Ranger outputs (loaded as AnnData objects in Python via scanpy).
+
+---
+
 ### 1. Quality control and filtering
 
 **Why**: raw spatial data contains empty bins, damaged tissue regions, and technical artifacts. Bins under tissue folds or air bubbles have inflated or depleted counts that do not reflect real biology. Filtering these out prevents them from distorting normalization, clustering, and every step downstream.
