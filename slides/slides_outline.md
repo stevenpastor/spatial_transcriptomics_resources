@@ -1,8 +1,21 @@
-# Visium HD Spatial Transcriptomics: Slide Outline (4 slides)
+# Visium HD Spatial Transcriptomics
 
-## Slide 1: Why Spatial Transcriptomics
+## 1. Why Spatial Transcriptomics
 
-scRNA-seq dissociates tissue, so you lose where cells sit. Spatial transcriptomics keeps the coordinates. In a tumor, immune cell position relative to tumor cells predicts therapy response, and that signal is gone after dissociation.
+### The problem with dissociation
+
+Single-cell and single-nucleus RNA-seq (scRNA-seq, snRNA-seq) measure what each cell expresses, but they require dissociating the tissue first. Once cells are separated from the section, all spatial information is lost: you no longer know where a cell sat, what it was next to, or which tissue compartment it belonged to. For many biological questions, this is a critical gap.
+
+Cell function depends on context. The same fibroblast behaves differently in a wound margin vs. deep stroma. Immune cells adjacent to tumor cells engage different programs than those in a distant lymphoid aggregate. Gradients of signaling molecules, physical cell-cell contacts, and local oxygen levels all shape gene expression, and all of these are spatial. Dissociation-based methods cannot recover this information after the fact.
+
+### What spatial transcriptomics adds
+
+Spatial transcriptomics measures gene expression in intact tissue sections, preserving both the expression profile and the x,y coordinates of each measurement. This enables analyses that are impossible with scRNA-seq:
+
+- Which cell types are neighbors, and does that co-localization happen more than expected by chance?
+- Are specific genes expressed in spatial gradients, boundaries, or confined to particular tissue regions?
+- Which ligand-receptor signaling pairs are active between spatially adjacent cell types?
+- How does the cellular microenvironment change across a tumor-stroma boundary or along an organ axis?
 
 ### Two technology families
 
@@ -14,7 +27,7 @@ scRNA-seq dissociates tissue, so you lose where cells sit. Spatial transcriptomi
 
 ---
 
-## Slide 2: How Visium HD Works
+## 2. How Visium HD Works
 
 ### The slide: a continuous oligo lawn
 
@@ -50,7 +63,7 @@ Even at 8 um, each bin may contain parts of multiple cells, so gene expression i
 
 ---
 
-## Slide 3: Space Ranger - From Raw Data to Spatial Matrices
+## 3. Space Ranger: From Raw Data to Spatial Matrices
 
 ### Inputs
 
@@ -115,7 +128,7 @@ We use the 8 um resolution because it balances signal density (~1 to 3 cells per
 
 ---
 
-## Slide 4: Analysis Pipeline
+## 4. Analysis Pipeline
 
 ### Before analysis: upstream processing
 
