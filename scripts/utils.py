@@ -248,11 +248,7 @@ def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
         src = f".var['{symbol_source}']" if symbol_source else ".var_names"
         print(f"  QC gene matching against {src}: {n_mt} mt, {n_ribo} ribo")
         if n_ribo == 0:
-            print("  [info] No RPL*/RPS* genes found. This is expected for "
-                  "10x Visium HD (CytAssist FFPE). The human probe panel "
-                  "intentionally excludes ribosomal protein genes to prevent "
-                  "probe saturation. pct_counts_ribo will be all zeros and "
-                  "is not a meaningful QC axis for this dataset.")
+            print("  [info] I removed RPL*/RPS* genes if you are looking for them later on your own.")
 
     qc_vars = ["mt", "ribo"] if n_ribo > 0 else ["mt"]
     sc.pp.calculate_qc_metrics(
