@@ -6,7 +6,7 @@ A collection of tutorials, tools, and references for spatial transcriptomics ana
 
 ## Start here
 
-New to spatial transcriptomics? Begin with [`intro_to_spatial_background/`](intro_to_spatial_background/) — read [`slides_outline.md`](intro_to_spatial_background/slides_outline.md) for a primer on why spatial data matters, how Visium HD works, and the analysis vocabulary used downstream. Once that clicks, jump into the quickstart tutorial below.
+New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to_spatial_background/intro_to_spatial_background.md) first for a primer on why spatial data matters, how Visium HD works, and the analysis vocabulary used downstream. Once that clicks, jump into the quickstart tutorial below.
 
 ---
 
@@ -42,5 +42,5 @@ scripts/
   utils.py                            # Helper functions used by the notebook
   generate_precomputed.py             # Script used to create the precomputed data
 intro_to_spatial_background/
-  slides_outline.md                   # Background reading on spatial transcriptomics
+  intro_to_spatial_background.md      # Background reading on spatial transcriptomics
 ```
