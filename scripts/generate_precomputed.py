@@ -139,15 +139,78 @@ def save_with_size_check(adata, path, max_mb=MAX_FILE_MB):
     return True
 
 
-def run_liana(adata, groupby="DeconvolutionLabel1", min_group_size=100,
-              expr_prop=0.1, min_cells=20, n_perms=1000, seed=RANDOM_STATE):
-    """Run liana.mt.rank_aggregate and return the result DataFrame.
+def subcluster_macrophages(adata, mac_labels=("Macrophage", "Proliferating Macrophages"),
+                           n_top_genes=2000, n_pcs=30, n_neighbors=15,
+                           resolution=0.8, min_subtype_size=50):
+    """Re-cluster the macrophage subset and label SPP1+ vs SELENOP+ subclusters.
 
-    Uses the broad DeconvolutionLabel1 column so groups stay big enough on
-    a 50K-bin subsample for stable L-R rankings. The macrophage subtype
-    contrast (SPP1+ vs SELENOP+) in the source paper requires finer labels
-    and the full ~500K-bin dataset; see the notebook for details.
+    Returns a Series (indexed by adata.obs_names) labeling each macrophage bin
+    as 'Macrophage_SPP1+', 'Macrophage_SELENOP+', or 'Macrophage_other'.
+    Non-macrophage bins are mapped to None.
+
+    This recovers the paper's headline cell-cell-communication finding (Fig 5):
+    SPP1+ macrophages at the tumor edge driving ECM/integrin signaling vs.
+    SELENOP+ macrophages elsewhere in the TME.
     """
+    base = adata.obs["DeconvolutionLabel1"].astype(str)
+    mac_mask = base.isin(mac_labels).values
+    print(f"  Macrophage bins to subcluster: {int(mac_mask.sum()):,}")
+
+    adata_mac = adata[mac_mask].copy()
+    if "counts" in adata_mac.layers:
+        adata_mac.X = adata_mac.layers["counts"].copy()
+    sc.pp.normalize_total(adata_mac, target_sum=1e4)
+    sc.pp.log1p(adata_mac)
+    sc.pp.highly_variable_genes(adata_mac, n_top_genes=n_top_genes, flavor="seurat")
+    adata_mac_h = adata_mac[:, adata_mac.var["highly_variable"]].copy()
+    sc.pp.scale(adata_mac_h, max_value=10)
+    sc.pp.pca(adata_mac_h, n_comps=n_pcs)
+    sc.pp.neighbors(adata_mac_h, n_neighbors=n_neighbors)
+    sc.tl.leiden(adata_mac_h, resolution=resolution, key_added="leiden_mac")
+
+    def expr(a, gene):
+        X = a[:, gene].X
+        return (X.toarray() if sparse.issparse(X) else np.asarray(X)).flatten()
+
+    spp1 = expr(adata_mac, "SPP1")
+    selp = expr(adata_mac, "SELENOP")
+    clusters = adata_mac_h.obs["leiden_mac"].astype(int).values
+
+    candidates = []
+    for c in sorted(np.unique(clusters)):
+        m = (clusters == c)
+        if m.sum() < min_subtype_size:
+            continue
+        candidates.append((c, spp1[m].mean(), selp[m].mean(), int(m.sum())))
+
+    if len(candidates) < 2:
+        print(f"  WARNING: fewer than 2 candidate macrophage subclusters >= "
+              f"{min_subtype_size} bins; subtype labels NOT created.")
+        return pd.Series(index=adata.obs_names, dtype=object)
+
+    spp1_top = max(candidates, key=lambda s: s[1])
+    selp_top = max(candidates, key=lambda s: s[2])
+    if spp1_top[0] == selp_top[0]:
+        print("  WARNING: same cluster wins both SPP1+ and SELENOP+; "
+              "subtype labels NOT created.")
+        return pd.Series(index=adata.obs_names, dtype=object)
+    print(f"  SPP1+ subcluster {spp1_top[0]}: n={spp1_top[3]}, "
+          f"mean SPP1={spp1_top[1]:.2f}, mean SELENOP={spp1_top[2]:.2f}")
+    print(f"  SELENOP+ subcluster {selp_top[0]}: n={selp_top[3]}, "
+          f"mean SPP1={selp_top[1]:.2f}, mean SELENOP={selp_top[2]:.2f}")
+
+    mac_label = np.array(["Macrophage_other"] * len(clusters), dtype=object)
+    mac_label[clusters == spp1_top[0]] = "Macrophage_SPP1+"
+    mac_label[clusters == selp_top[0]] = "Macrophage_SELENOP+"
+
+    result = pd.Series(index=adata.obs_names, dtype=object)
+    result.iloc[np.where(mac_mask)[0]] = mac_label
+    return result
+
+
+def run_liana(adata, groupby, min_group_size=50,
+              expr_prop=0.1, min_cells=20, n_perms=1000, seed=RANDOM_STATE):
+    """Run liana.mt.rank_aggregate and return the result DataFrame."""
     import liana as li
 
     obs = adata.obs[groupby].astype(str)
@@ -173,14 +236,17 @@ def run_liana(adata, groupby="DeconvolutionLabel1", min_group_size=100,
         n_perms=n_perms,
         seed=seed,
     )
-    return sub.uns["liana_res"].copy()
+    return sub.uns["liana_res"].copy(), sub.obs[groupby].copy()
 
 
 def generate_liana(annot_path, out_path):
-    """Compute LIANA on the (subsampled) annotated checkpoint and save parquet.
+    """Compute LIANA + macrophage subtypes on the annotated checkpoint.
 
-    Embeds run metadata in the parquet schema so the notebook can show
-    provenance (groupby column, resource, n_perms, n_bins).
+    Adds SPP1+ vs SELENOP+ macrophage labels via subclustering on the
+    macrophage subset, then runs LIANA at that granularity. Writes the
+    L-R results plus the macrophage subtype labels (as an embedded side
+    table) into the parquet schema metadata, so the notebook can color
+    the spatial overlay without recomputing.
     """
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -189,21 +255,40 @@ def generate_liana(annot_path, out_path):
     adata = sc.read_h5ad(annot_path)
     print(f"  Loaded annotated: {adata.shape}")
 
-    groupby = "DeconvolutionLabel1"
-    res = run_liana(adata, groupby=groupby)
+    mac_subtypes = subcluster_macrophages(adata)
+
+    cell_type = adata.obs["DeconvolutionLabel1"].astype(str).copy()
+    has_subtype = mac_subtypes.notna()
+    cell_type.loc[has_subtype] = mac_subtypes.loc[has_subtype].astype(str)
+    adata.obs["cell_type_liana"] = cell_type.values
+
+    res, used_labels = run_liana(adata, groupby="cell_type_liana")
     print(f"  LIANA rows: {len(res):,}")
 
+    # Embed macrophage subtype labels so the notebook can re-color the overlay
+    mac_lbl_df = (used_labels[used_labels.astype(str).str.startswith("Macrophage")]
+                  .rename("subtype")
+                  .reset_index()
+                  .rename(columns={"index": "barcode"}))
+    mac_lbl_df["barcode"] = mac_lbl_df["barcode"].astype(str)
+    mac_lbl_df["subtype"] = mac_lbl_df["subtype"].astype(str)
+
     table = pa.Table.from_pandas(res, preserve_index=False)
+    mac_buf = pa.BufferOutputStream()
+    pq.write_table(pa.Table.from_pandas(mac_lbl_df, preserve_index=False),
+                   mac_buf, compression="zstd")
+    mac_blob = mac_buf.getvalue().to_pybytes()
+
     meta = {
-        "liana_groupby": groupby,
-        "liana_resource": "consensus",
-        "liana_n_perms": "1000",
-        "liana_n_bins": str(int(adata.n_obs)),
-        "liana_dataset": "CRC P1 (de Oliveira et al. 2025, Nat Genet)",
+        b"liana_groupby": b"cell_type_liana (DeconvolutionLabel1 + macrophage subclustering)",
+        b"liana_resource": b"consensus",
+        b"liana_n_perms": b"1000",
+        b"liana_n_bins": str(int(adata.n_obs)).encode(),
+        b"liana_dataset": b"CRC P1 (de Oliveira et al. 2025, Nat Genet)",
+        b"liana_mac_subtype_table_parquet": mac_blob,
     }
     existing = dict(table.schema.metadata or {})
-    merged = {**existing, **{k.encode(): v.encode() for k, v in meta.items()}}
-    table = table.replace_schema_metadata(merged)
+    table = table.replace_schema_metadata({**existing, **meta})
     pq.write_table(table, out_path)
 
     size_mb = file_mb(out_path)
