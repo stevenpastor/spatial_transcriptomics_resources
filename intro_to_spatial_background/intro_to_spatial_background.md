@@ -243,7 +243,7 @@ For plotting, `sc.pl.umap(adata, color="leiden")` makes the UMAP scatter, `sc.pl
 
 ### squidpy: the spatial layer on top
 
-`squidpy` adds spatial-aware analysis on top of the scanpy/AnnData stack: neighbor graphs from coordinates, neighborhood enrichment, spatial autocorrelation (Moran's I), ligand-receptor analysis, and image-based features. The foundation is the spatial neighbor graph:
+`squidpy` adds spatial-aware analysis on top of the scanpy/AnnData stack: neighbor graphs from coordinates, neighborhood enrichment, spatial autocorrelation (Moran's I), and image-based features. The foundation is the spatial neighbor graph:
 
 ```python
 import squidpy as sq
@@ -319,7 +319,7 @@ Everything from this point forward is what we do in the tutorial, starting from 
 
 ### 7. Cell-cell communication (ligand-receptor)
 
-**Why**: cells communicate through ligand-receptor interactions, and spatial transcriptomics lets you test whether a ligand and its receptor are actually expressed in neighboring cell types, not just co-expressed somewhere in the dataset. Squidpy's ligrec analysis tests each ligand-receptor pair across each cell type pair, using permutation tests to assess significance. This identifies specific signaling axes between spatially adjacent populations (e.g., tumor-secreted ligands binding receptors on nearby immune cells).
+**Why**: cells communicate through ligand-receptor interactions, and spatial transcriptomics lets you test whether a ligand and its receptor are actually expressed in neighboring cell types, not just co-expressed somewhere in the dataset. We use **LIANA**, a meta-method that wraps five established L-R scoring methods (CellPhoneDB, CellChat, NATMI, Connectome, SingleCellSignalR) and aggregates their per-pair ranks into a single consensus score. Each method captures a slightly different definition of a "strong" interaction (mean expression, expression product, specificity, logFC, scaled weight), so aggregating reduces method-specific biases. The Visium HD colorectal cancer paper this tutorial uses ([de Oliveira et al., Nature Genetics 2025](https://www.nature.com/articles/s41588-025-02193-3)) ran LIANA in its Figure 5 cell-cell communication analysis, so this matches the published workflow.
 
 ### 8. Validation
 

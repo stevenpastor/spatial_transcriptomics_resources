@@ -8,8 +8,9 @@ Usage:
     python scripts/generate_precomputed.py
 
 Outputs:
-    data/precomputed/crc_p1_raw_50k.h5ad        (< 100 MB)
+    data/precomputed/crc_p1_raw_50k.h5ad         (< 100 MB)
     data/precomputed/crc_p1_annotated_50k.h5ad   (< 100 MB)
+    data/precomputed/crc_p1_liana.parquet        (~0.1 - few MB)
 """
 
 import sys
@@ -138,6 +139,78 @@ def save_with_size_check(adata, path, max_mb=MAX_FILE_MB):
     return True
 
 
+def run_liana(adata, groupby="DeconvolutionLabel1", min_group_size=100,
+              expr_prop=0.1, min_cells=20, n_perms=1000, seed=RANDOM_STATE):
+    """Run liana.mt.rank_aggregate and return the result DataFrame.
+
+    Uses the broad DeconvolutionLabel1 column so groups stay big enough on
+    a 50K-bin subsample for stable L-R rankings. The macrophage subtype
+    contrast (SPP1+ vs SELENOP+) in the source paper requires finer labels
+    and the full ~500K-bin dataset; see the notebook for details.
+    """
+    import liana as li
+
+    obs = adata.obs[groupby].astype(str)
+    keep_mask = (obs != "nan") & obs.notna()
+    sub = adata[keep_mask.values].copy()
+
+    counts = sub.obs[groupby].value_counts()
+    keep_types = counts[counts >= min_group_size].index.tolist()
+    sub = sub[sub.obs[groupby].isin(keep_types)].copy()
+    sub.obs[groupby] = sub.obs[groupby].astype("category")
+
+    print(f"  LIANA on {sub.n_obs:,} bins x {sub.n_vars:,} genes, "
+          f"{len(keep_types)} cell types (>= {min_group_size} bins each)")
+
+    li.mt.rank_aggregate(
+        sub,
+        groupby=groupby,
+        resource_name="consensus",
+        expr_prop=expr_prop,
+        min_cells=min_cells,
+        use_raw=False,
+        verbose=False,
+        n_perms=n_perms,
+        seed=seed,
+    )
+    return sub.uns["liana_res"].copy()
+
+
+def generate_liana(annot_path, out_path):
+    """Compute LIANA on the (subsampled) annotated checkpoint and save parquet.
+
+    Embeds run metadata in the parquet schema so the notebook can show
+    provenance (groupby column, resource, n_perms, n_bins).
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    print(f"\n--- LIANA precompute ---")
+    adata = sc.read_h5ad(annot_path)
+    print(f"  Loaded annotated: {adata.shape}")
+
+    groupby = "DeconvolutionLabel1"
+    res = run_liana(adata, groupby=groupby)
+    print(f"  LIANA rows: {len(res):,}")
+
+    table = pa.Table.from_pandas(res, preserve_index=False)
+    meta = {
+        "liana_groupby": groupby,
+        "liana_resource": "consensus",
+        "liana_n_perms": "1000",
+        "liana_n_bins": str(int(adata.n_obs)),
+        "liana_dataset": "CRC P1 (de Oliveira et al. 2025, Nat Genet)",
+    }
+    existing = dict(table.schema.metadata or {})
+    merged = {**existing, **{k.encode(): v.encode() for k, v in meta.items()}}
+    table = table.replace_schema_metadata(merged)
+    pq.write_table(table, out_path)
+
+    size_mb = file_mb(out_path)
+    print(f"  Saved: {out_path.name} ({size_mb:.2f} MB)")
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -220,6 +293,16 @@ def generate(n_bins=TARGET_BINS):
         return False
 
     # ------------------------------------------------------------------
+    # 3. LIANA cell-cell communication artifact
+    # ------------------------------------------------------------------
+    liana_path = OUTPUT_DIR / "crc_p1_liana.parquet"
+    try:
+        generate_liana(annot_path, liana_path)
+    except ImportError as exc:
+        print(f"\n  WARNING: LIANA precompute skipped ({exc}). "
+              "Install liana to enable: pip install liana")
+
+    # ------------------------------------------------------------------
     # Summary
     # ------------------------------------------------------------------
     print(f"\n{'='*60}")
@@ -227,9 +310,12 @@ def generate(n_bins=TARGET_BINS):
     print(f"{'='*60}")
     print(f"  {raw_path.name:40s}  {file_mb(raw_path):6.1f} MB")
     print(f"  {annot_path.name:40s}  {file_mb(annot_path):6.1f} MB")
+    if liana_path.exists():
+        print(f"  {liana_path.name:40s}  {file_mb(liana_path):6.2f} MB")
     if SPATIAL_OUT.exists():
         for f in sorted(SPATIAL_OUT.iterdir()):
             print(f"  spatial/{f.name:36s}  {file_mb(f):6.1f} MB")
+    print(f"\nNext: upload all files in {OUTPUT_DIR} to Figshare article 31937262.")
     return True
 
 
