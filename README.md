@@ -1,12 +1,12 @@
 # Spatial Transcriptomics Resources
 
-A collection of tutorials, tools, and references for spatial transcriptomics analysis. Under construction. In the future, this repository will include links and resources for all things spatial to help users determine how best to analyze their data.
+Tutorials, tools, and references for spatial transcriptomics analysis. Still under construction. Over time it will grow into a one-stop set of links and resources for spatial work, with the goal of helping you decide how to analyze your own data.
 
 ---
 
 ## Start here
 
-New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to_spatial_background/intro_to_spatial_background.md) first for a primer on why spatial data matters, how Visium HD works, and the analysis vocabulary used downstream. Currently the focus is Visium HD and I will expand to other techs in the near future. Once you understand the background, move on to the quickstart tutorial below.
+New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to_spatial_background/intro_to_spatial_background.md) first. It covers why spatial data matters, how Visium HD works, and the analysis vocabulary you will see in the notebook. The current focus is Visium HD; other technologies will follow. Once the background reads cleanly, jump into the quickstart below.
 
 ---
 
@@ -18,20 +18,20 @@ New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/stevenpastor/spatial_transcriptomics_resources/blob/main/notebook/visium_hd_quickstart.ipynb)
 
-Analyze a 10x Genomics Visium HD spatial transcriptomics dataset with QC, filtering, cell type annotation, neighborhood analysis, spatially variable genes, and ligand-receptor communication.
+Walk through a Visium HD analysis on a 10x Genomics dataset: QC, filtering, cell type annotation, neighborhood analysis, spatially variable genes, and ligand-receptor communication.
 
-Click the **Colab** badge above to run the quickstart notebook. It auto-installs dependencies and downloads pre-processed data (~150 MB) from Figshare. No local setup needed.
+Click the **Colab** badge above to launch the notebook. Packages install themselves and the pre-processed data (~150 MB) downloads from Figshare on first run. Nothing to set up locally.
 
 ##### Dataset
 
-Human Colorectal Cancer (CRC), Patient 1 from the [Nature Genetics 2025 publication](https://www.nature.com/articles/s41588-025-02193-3). Pre-processed to ~50K bins at 8 um resolution with ground-truth cell type annotations from the original study group.
+Human Colorectal Cancer (CRC), Patient 1, from the [Nature Genetics 2025 publication](https://www.nature.com/articles/s41588-025-02193-3). The notebook works with ~50K 8 um bins (a random subsample of the full tissue) plus the published ground-truth cell type labels from the original authors.
 
 #### What you will learn
 
-1. Load and explore Visium HD spatial transcriptomics data
-2. Quality control with filtering (per-bin metrics + spatial outlier detection)
-3. Compare marker-based annotations against published ground-truth labels
-4. Spatial neighborhood analysis, spatially variable genes, cell-cell communication
+1. How to load and poke around a Visium HD dataset
+2. QC and filtering, both per-bin and via spatial outlier detection
+3. Annotating bins with marker genes and checking the result against the published labels
+4. Neighborhood analysis, spatially variable genes, and cell-cell communication
 
 ## Repository structure
 

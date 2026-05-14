@@ -202,15 +202,15 @@ def load_visium_hd_segmented(data_dir: str) -> sc.AnnData:
 # ---------------------------------------------------------------------------
 
 def compute_qc_metrics(adata: sc.AnnData, verbose: bool = True) -> sc.AnnData:
-    """Compute comprehensive QC metrics for Visium HD data.
+    """Compute QC metrics for Visium HD data.
 
     Adds: total_counts, n_genes_by_counts, pct_counts_mt, pct_counts_ribo,
           log1p_total_counts, log1p_n_genes, complexity.
 
-    Robust to var_names being Ensembl IDs: looks for a gene-symbol column
-    in .var (gene_symbols / feature_name / symbol / gene_name) and matches
-    against that. Prints a diagnostic of how many genes were flagged so you
-    can catch silently-empty matches.
+    Handles the case where var_names are Ensembl IDs by looking for a
+    gene-symbol column in .var (gene_symbols / feature_name / symbol /
+    gene_name) and matching against that. Prints how many genes were
+    flagged so silently-empty matches do not go unnoticed.
     """
     # Find the most plausible source of gene symbols. read_10x_h5 / read_10x_mtx
     # usually puts symbols in var_names, but with some Visium HD outputs the
