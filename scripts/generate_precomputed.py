@@ -8,9 +8,15 @@ Usage:
     python scripts/generate_precomputed.py
 
 Outputs:
-    data/precomputed/crc_p1_raw_50k.h5ad         (< 100 MB)
-    data/precomputed/crc_p1_annotated_50k.h5ad   (< 100 MB)
-    data/precomputed/crc_p1_liana.parquet        (~0.1 - few MB)
+    data/precomputed/crc_p1_raw_50k.h5ad         (< 100 MB, 50K subsample)
+    data/precomputed/crc_p1_annotated_50k.h5ad   (< 100 MB, 50K subsample)
+    data/precomputed/crc_p1_liana.parquet        (~0.1 - few MB, FULL tissue)
+
+The h5ads are 50K-bin subsamples so the notebook can download them
+quickly on Colab. The LIANA parquet, however, is computed on the full
+~500K-bin annotated checkpoint so the L-R statistics reflect the
+whole tissue and small populations (SELENOP+ macrophages, sparse
+chemokines) clear LIANA's expression-proportion thresholds.
 """
 
 import sys
@@ -240,7 +246,13 @@ def run_liana(adata, groupby, min_group_size=50,
 
 
 def generate_liana(annot_path, out_path):
-    """Compute LIANA + macrophage subtypes on the annotated checkpoint.
+    """Compute LIANA + macrophage subtypes on the FULL annotated checkpoint.
+
+    `annot_path` is kept in the signature for caller compatibility but is
+    not read. LIANA always runs on the full, unsubsampled checkpoint at
+    `CHECKPOINT_DIR / "crc_p1_8um_annotated.h5ad"` so the shipped parquet
+    reflects whole-tissue statistics rather than the 50K subsample used
+    for in-notebook visualization.
 
     Adds SPP1+ vs SELENOP+ macrophage labels via subclustering on the
     macrophage subset, then runs LIANA at that granularity. Writes the
@@ -251,9 +263,25 @@ def generate_liana(annot_path, out_path):
     import pyarrow as pa
     import pyarrow.parquet as pq
 
-    print(f"\n--- LIANA precompute ---")
-    adata = sc.read_h5ad(annot_path)
-    print(f"  Loaded annotated: {adata.shape}")
+    full_ckpt = CHECKPOINT_DIR / "crc_p1_8um_annotated.h5ad"
+    if not full_ckpt.exists():
+        raise FileNotFoundError(
+            f"Full annotated checkpoint missing: {full_ckpt}. "
+            "LIANA must run on the full ~500K-bin tissue, not the 50K "
+            "subsample. Build this checkpoint by running the notebook's "
+            "QC + normalization + annotation cells on the full Space Ranger "
+            "output with subsampling disabled."
+        )
+
+    print(f"\n--- LIANA precompute (full tissue) ---")
+    adata = sc.read_h5ad(full_ckpt)
+    print(f"  Loaded annotated (full): {adata.shape}")
+
+    if "DeconvolutionLabel1" not in adata.obs.columns:
+        adata = embed_annotations(adata, METADATA_PATH)
+    adata = filter_zero_genes(adata)
+    if adata.raw is not None:
+        adata.raw = None
 
     mac_subtypes = subcluster_macrophages(adata)
 
@@ -284,6 +312,7 @@ def generate_liana(annot_path, out_path):
         b"liana_resource": b"consensus",
         b"liana_n_perms": b"1000",
         b"liana_n_bins": str(int(adata.n_obs)).encode(),
+        b"liana_subset": b"full_tissue",
         b"liana_dataset": b"CRC P1 (de Oliveira et al. 2025, Nat Genet)",
         b"liana_mac_subtype_table_parquet": mac_blob,
     }
