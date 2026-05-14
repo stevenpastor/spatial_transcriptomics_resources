@@ -6,7 +6,7 @@ Tutorials, tools, and references for spatial transcriptomics analysis. Still und
 
 ## Start here
 
-New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to_spatial_background/intro_to_spatial_background.md) first. It covers why spatial data matters, how some of the technologies work, and the analysis vocabulary you will encounter in this repo and its tutorials. The current focus is Visium HD but other technologies will soon follow. Once you underdstand the basics, go to the quickstart below.
+New to spatial transcriptomics? Read [`intro_to_spatial_background.md`](intro_to_spatial_background/intro_to_spatial_background.md) first. It covers why spatial data matters, how some of the technologies work, and the analysis vocabulary you will encounter in this repo and its tutorials. The current focus is Visium HD but other technologies will soon follow. Once you understand the basics, go to the quickstart below.
 
 ---
 
