@@ -2,3 +2,4 @@ notebook/.ipynb_checkpoints/
 scripts/__pycache__/
 *.pyc
 .DS_Store
+scripts/precompute_liana_full.py
